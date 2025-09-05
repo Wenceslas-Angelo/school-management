@@ -1,50 +1,36 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import Table from "../components/Table";
 import type { ColumnDef } from "@tanstack/react-table";
-import type { Student } from "../../types/student";
 import type { Class } from "../../types/class";
-import StudentForm from "../components/StudentForm";
+import ClassForm from "../components/ClassForm";
 import Modal from "../components/Modal";
-import { useStudents } from "../hooks/useStudents";
+import { useClasses } from "../hooks/useClasses";
 import { FaPlus, FaEdit, FaTrash } from "react-icons/fa";
 
-const Students = () => {
-  const { students, reload, add, update, remove } = useStudents();
-
-  const [classes, setClasses] = useState<Class[]>([]);
+const Classes = () => {
+  const { classes, reload, add, update, remove } = useClasses();
   const [isAddModalOpen, setAddModalOpen] = useState(false);
-  const [editStudent, setEditStudent] = useState<Student | null>(null);
-  const [deleteStudent, setDeleteStudent] = useState<Student | null>(null);
+  const [editClass, setEditClass] = useState<Class | null>(null);
+  const [deleteClass, setDeleteClass] = useState<Class | null>(null);
 
-  useEffect(() => {
-    window.api.classes.getAll().then(setClasses);
-  }, []);
-
-  const getClassName = (classId?: number) => {
-    const cls = classes.find((c) => c.id === classId);
-    return cls ? (cls.section ? `${cls.name} ${cls.section}` : cls.name) : "-";
-  };
-
-  const columns: ColumnDef<Student>[] = [
+  const columns: ColumnDef<Class>[] = [
     { accessorKey: "id", header: "ID" },
-    { accessorFn: (row) => `${row.firstName} ${row.lastName}`, header: "Name" },
-    { accessorFn: (row) => getClassName(row.classId), header: "Class" },
-    { accessorKey: "birthDate", header: "Birth Date" },
-    { accessorKey: "sex", header: "Sex" },
+    { accessorKey: "name", header: "Class Name" },
+    { accessorKey: "section", header: "Section" },
     {
       id: "actions",
       header: "Actions",
       cell: ({ row }) => (
         <div className="flex gap-2">
           <button
-            onClick={() => setEditStudent(row.original)}
+            onClick={() => setEditClass(row.original)}
             className="p-2 bg-yellow-400 rounded hover:bg-yellow-500 text-white"
             title="Edit"
           >
             <FaEdit />
           </button>
           <button
-            onClick={() => setDeleteStudent(row.original)}
+            onClick={() => setDeleteClass(row.original)}
             className="p-2 bg-red-500 rounded hover:bg-red-600 text-white"
             title="Delete"
           >
@@ -58,26 +44,26 @@ const Students = () => {
   return (
     <div>
       <h1 className="text-xl font-bold mb-4 flex justify-between items-center">
-        Students
+        Classes
         <button
           onClick={() => setAddModalOpen(true)}
           className="flex items-center gap-2 px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
         >
-          <FaPlus /> Add Student
+          <FaPlus /> Add Class
         </button>
       </h1>
 
-      <Table data={students} columns={columns} />
+      <Table data={classes} columns={columns} />
 
       {/* MODAL AJOUT */}
       <Modal
         isOpen={isAddModalOpen}
         onClose={() => setAddModalOpen(false)}
-        title="Add Student"
+        title="Add Class"
       >
-        <StudentForm
-          onSubmit={async (student) => {
-            await add(student);
+        <ClassForm
+          onSubmit={async (classItem) => {
+            await add(classItem);
             setAddModalOpen(false);
             reload();
           }}
@@ -87,45 +73,45 @@ const Students = () => {
 
       {/* MODAL EDIT */}
       <Modal
-        isOpen={!!editStudent}
-        onClose={() => setEditStudent(null)}
-        title="Edit Student"
+        isOpen={!!editClass}
+        onClose={() => setEditClass(null)}
+        title="Edit Class"
       >
-        {editStudent && (
-          <StudentForm
-            student={editStudent}
-            onSubmit={async (student) => {
-              await update(student);
-              setEditStudent(null);
+        {editClass && (
+          <ClassForm
+            classItem={editClass}
+            onSubmit={async (classItem) => {
+              await update(classItem);
+              setEditClass(null);
               reload();
             }}
-            onCancel={() => setEditStudent(null)}
+            onCancel={() => setEditClass(null)}
           />
         )}
       </Modal>
 
       {/* MODAL SUPPRESSION */}
       <Modal
-        isOpen={!!deleteStudent}
-        onClose={() => setDeleteStudent(null)}
+        isOpen={!!deleteClass}
+        onClose={() => setDeleteClass(null)}
         title="Confirm Delete"
       >
         <p>
-          Are you sure you want to delete {deleteStudent?.firstName}{" "}
-          {deleteStudent?.lastName}?
+          Are you sure you want to delete the class {deleteClass?.name}{" "}
+          {deleteClass?.section ? `(${deleteClass.section})` : ""}?
         </p>
         <div className="flex justify-end gap-2 mt-4">
           <button
-            onClick={() => setDeleteStudent(null)}
+            onClick={() => setDeleteClass(null)}
             className="px-4 py-2 bg-gray-200 rounded hover:bg-gray-300"
           >
             Cancel
           </button>
           <button
             onClick={async () => {
-              if (deleteStudent?.id) {
-                await remove(deleteStudent.id);
-                setDeleteStudent(null);
+              if (deleteClass?.id) {
+                await remove(deleteClass.id);
+                setDeleteClass(null);
                 reload();
               }
             }}
@@ -139,4 +125,4 @@ const Students = () => {
   );
 };
 
-export default Students;
+export default Classes;

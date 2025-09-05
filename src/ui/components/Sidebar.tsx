@@ -1,11 +1,17 @@
 import React from "react";
 import { Link, useLocation } from "react-router-dom";
-import { FaHome, FaUserGraduate, FaMoneyBillWave } from "react-icons/fa";
+import {
+  FaHome,
+  FaUserGraduate,
+  FaMoneyBillWave,
+  FaLayerGroup,
+} from "react-icons/fa";
 
 const menuItems = [
   { icon: <FaHome size={18} />, label: "Home", href: "/" },
   { icon: <FaUserGraduate size={18} />, label: "Students", href: "/students" },
-  { icon: <FaMoneyBillWave size={18} />, label: "Payments", href: "/payments" }, // 💸 ici
+  { icon: <FaMoneyBillWave size={18} />, label: "Payments", href: "/payments" },
+  { icon: <FaLayerGroup size={18} />, label: "Classes", href: "/classes" }, // 📚 ajout
 ];
 
 const Sidebar = () => {

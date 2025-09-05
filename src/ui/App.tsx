@@ -3,6 +3,7 @@ import { Routes, Route } from "react-router-dom";
 import Layout from "./components/Layout";
 import Dashboard from "./pages/Dashboard";
 import Students from "./pages/Students";
+import Classes from "./pages/Classes";
 import Payments from "./pages/Payments";
 
 const App = () => {
@@ -12,6 +13,7 @@ const App = () => {
         <Routes>
           <Route path="/" element={<Dashboard />} />
           <Route path="/students" element={<Students />} />
+          <Route path="/classes" element={<Classes />} />
           <Route path="/payments" element={<Payments />} />
         </Routes>
       </Layout>

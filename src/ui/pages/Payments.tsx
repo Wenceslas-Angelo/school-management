@@ -19,9 +19,17 @@ const Payments = () => {
     { accessorKey: "id", header: "ID" },
     { accessorKey: "studentName", header: "Student" },
     { accessorKey: "className", header: "Class" },
-    { accessorKey: "amount", header: "Amount" },
-    { accessorKey: "date", header: "Date" },
-    { accessorKey: "status", header: "Status" },
+    {
+      accessorKey: "amount",
+      header: "Amount",
+      cell: ({ getValue }) => `${getValue<number>()} Ar`,
+    },
+    {
+      accessorKey: "date",
+      header: "Date",
+      cell: ({ getValue }) => new Date(getValue<string>()).toLocaleDateString(),
+    },
+    { accessorKey: "months", header: "Months Paid" },
     {
       id: "actions",
       header: "Actions",
@@ -102,10 +110,8 @@ const Payments = () => {
         title="Confirm Delete"
       >
         <p>
-          <p>
-            Are you sure you want to delete payment of {deletePayment?.amount}{" "}
-            Ar for {deletePayment?.studentName} ({deletePayment?.className})?
-          </p>
+          Are you sure you want to delete payment of {deletePayment?.amount} Ar
+          for {deletePayment?.studentName} ({deletePayment?.className})?
         </p>
         <div className="flex justify-end gap-2 mt-4">
           <button

@@ -1,7 +1,8 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { useForm, type SubmitHandler } from "react-hook-form";
 import FormInput from "./FormInput";
 import type { PaymentExtended } from "../../types/payment";
+import type { Student } from "../../types/student";
 
 type PaymentFormProps = {
   payment?: PaymentExtended;
@@ -14,15 +15,23 @@ const PaymentForm = ({ payment, onSubmit, onCancel }: PaymentFormProps) => {
     register,
     handleSubmit,
     formState: { errors },
+    // setValue,
   } = useForm<PaymentExtended>({
     defaultValues: payment || { date: new Date().toISOString().slice(0, 10) },
   });
+
+  const [students, setStudents] = useState<Student[]>([]);
+
+  useEffect(() => {
+    window.api.students.getAll().then(setStudents);
+  }, []);
 
   const submitHandler: SubmitHandler<PaymentExtended> = (data) => {
     onSubmit({
       ...payment,
       ...data,
       amount: Number(data.amount), // cast montant
+      months: data.months?.trim() || "",
     });
   };
 
@@ -32,12 +41,16 @@ const PaymentForm = ({ payment, onSubmit, onCancel }: PaymentFormProps) => {
       className="space-y-4 p-4 bg-white rounded shadow"
     >
       <FormInput
-        label="Student ID"
+        label="Student"
         name="studentId"
-        type="number"
+        type="select"
         register={register}
         required
         errors={errors}
+        options={students.map((s) => ({
+          value: s.id?.toString() || "",
+          label: `${s.firstName} ${s.lastName}`,
+        }))}
       />
       <FormInput
         label="Amount"
@@ -56,18 +69,13 @@ const PaymentForm = ({ payment, onSubmit, onCancel }: PaymentFormProps) => {
         errors={errors}
       />
       <FormInput
-        label="Status"
-        name="status"
-        type="select"
-        options={[
-          { value: "paid", label: "Paid" },
-          { value: "pending", label: "Pending" },
-          { value: "late", label: "Late" },
-        ]}
+        label="Months"
+        name="months"
+        type="text"
         register={register}
+        required
         errors={errors}
       />
-
       <div className="flex justify-end gap-2 mt-4">
         {onCancel && (
           <button

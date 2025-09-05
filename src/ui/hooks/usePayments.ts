@@ -1,6 +1,5 @@
 import { useEffect, useCallback } from "react";
 import { usePaymentStore } from "../store/paymentStore";
-// import { paymentsApi } from "../mocks/paymentsApi";
 import type { PaymentExtended } from "../../types/payment";
 
 export function usePayments() {
@@ -8,7 +7,7 @@ export function usePayments() {
     usePaymentStore();
 
   const reload = useCallback(async () => {
-    const data = await window.api.payments.getAll();
+    const data = await window.api.payments.getAllWithStudentInfo();
     setPayments(data);
   }, [setPayments]);
 

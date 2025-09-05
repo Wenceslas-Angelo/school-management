@@ -1,6 +1,5 @@
 import { useEffect, useCallback } from "react";
 import { useStudentStore } from "../store/studentStore";
-// import { studentsApi } from "../mocks/studentsApi";
 import type { Student } from "../../types/student";
 
 export function useStudents() {

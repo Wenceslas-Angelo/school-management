@@ -1,7 +1,8 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { useForm, type SubmitHandler } from "react-hook-form";
 import FormInput from "./FormInput";
 import type { Student } from "../../types/student";
+import type { Class } from "../../types/class";
 
 type StudentFormProps = {
   student?: Student;
@@ -13,17 +14,24 @@ const StudentForm = ({ student, onSubmit, onCancel }: StudentFormProps) => {
   const {
     register,
     handleSubmit,
+    // setValue,
     formState: { errors },
   } = useForm<Student>({
     defaultValues: student || {},
   });
+
+  const [classes, setClasses] = useState<Class[]>([]);
+
+  // Charger les classes pour le select
+  useEffect(() => {
+    window.api.classes.getAll().then(setClasses);
+  }, []);
 
   const submitHandler: SubmitHandler<Student> = (data) => {
     onSubmit({
       ...student, // garde id & createdAt si existant
       ...data,
       birthDate: data.birthDate || undefined,
-      className: data.className?.trim() || undefined,
     });
   };
 
@@ -54,11 +62,28 @@ const StudentForm = ({ student, onSubmit, onCancel }: StudentFormProps) => {
         errors={errors}
       />
       <FormInput
-        label="Class Name"
-        name="className"
-        type="text"
+        label="Sex"
+        name="sex"
+        type="select"
         register={register}
+        required
         errors={errors}
+        options={[
+          { value: "M", label: "Male" },
+          { value: "F", label: "Female" },
+        ]}
+      />
+      <FormInput
+        label="Class"
+        name="classId"
+        type="select"
+        register={register}
+        required
+        errors={errors}
+        options={classes.map((cls) => ({
+          value: cls.id.toString(),
+          label: cls.section ? `${cls.name} ${cls.section}` : cls.name,
+        }))}
       />
 
       <div className="flex justify-end gap-2 mt-4">
