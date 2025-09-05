@@ -1,0 +1,20 @@
+{
+  "appId": "com.electron.mwa.school-management",
+  "files": [
+    "dist-electron",
+    "dist-react"
+  ],
+  "mac": {
+    "target": "dmg"
+  },
+  "linux": {
+    "target": "AppImage",
+    "category": "Utility"
+  },
+  "win": {
+    "target": [
+      "portable",
+      "msi"
+    ]
+  }
+}
