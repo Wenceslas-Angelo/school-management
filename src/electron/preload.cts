@@ -19,6 +19,8 @@ electron.contextBridge.exposeInMainWorld("api", {
       electron.ipcRenderer.invoke("students:update", student),
     delete: (id: number): Promise<number> =>
       electron.ipcRenderer.invoke("students:delete", id),
+    search: (query: string): Promise<{ value: number; label: string }[]> =>
+      electron.ipcRenderer.invoke("students:search", query),
   },
 
   // Payments

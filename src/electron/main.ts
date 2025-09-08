@@ -35,6 +35,9 @@ ipcMain.handle("students:update", (_event, student) =>
   StudentDB.update(student)
 );
 ipcMain.handle("students:delete", (_event, id: number) => StudentDB.delete(id));
+ipcMain.handle("students:search", (_event, query: string) => {
+  return StudentDB.search(query);
+});
 
 // --- Payments IPC ---
 ipcMain.handle("payments:getAll", () => PaymentDB.getAll());

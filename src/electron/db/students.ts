@@ -13,7 +13,9 @@ export const StudentDB = {
   },
 
   getByClassId(classId: number): Student[] {
-    return db.prepare("SELECT * FROM students WHERE classId = ?").all(classId) as Student[];
+    return db
+      .prepare("SELECT * FROM students WHERE classId = ?")
+      .all(classId) as Student[];
   },
 
   add(student: Student): number {
@@ -52,5 +54,16 @@ export const StudentDB = {
     const stmt = db.prepare("DELETE FROM students WHERE id = ?");
     const info = stmt.run(id);
     return info.changes;
+  },
+
+  search(query: string) {
+    const q = `%${query.replace(/%/g, "\\%")}%`;
+    const stmt = db.prepare(
+      `SELECT id, firstName, lastName, birthDate, sex, classId
+       FROM students
+       WHERE (firstName || ' ' || lastName) LIKE ? OR (lastName || ' ' || firstName) LIKE ? OR firstName LIKE ? OR lastName LIKE ?
+       LIMIT 50`
+    );
+    return stmt.all(q, q, q, q);
   },
 };
