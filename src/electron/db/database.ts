@@ -1,20 +1,19 @@
 import Database from "better-sqlite3";
 import path from "path";
 import fs from "fs";
-import { fileURLToPath } from "url";
-import { dirname } from "path";
+// import { fileURLToPath } from "url";
+// import { dirname } from "path";
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
+// const __filename = fileURLToPath(import.meta.url);
+// const __dirname = dirname(__filename);
 
-const dbPath = path.join(__dirname, "school.db");
+const dbPath = path.join(process.cwd(), "data", "school.db");
 
-// Créer le fichier si il n'existe pas
-if (!fs.existsSync(dbPath)) {
-  fs.writeFileSync(dbPath, "");
+// Créer le dossier data s'il n'existe pas
+if (!fs.existsSync(path.dirname(dbPath))) {
+  fs.mkdirSync(path.dirname(dbPath));
 }
 
-// Connexion SQLite
 export const db = new Database(dbPath);
 
 // Création des tables si elles n'existent pas
@@ -47,5 +46,3 @@ CREATE TABLE IF NOT EXISTS payments (
   FOREIGN KEY(studentId) REFERENCES students(id) ON DELETE CASCADE
 );
 `);
-
-console.log("✅ Database initialized");

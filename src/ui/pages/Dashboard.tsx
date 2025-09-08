@@ -5,19 +5,16 @@ import {
   FaMoneyBillWave,
   FaExclamationTriangle,
 } from "react-icons/fa";
+import { useDashboard } from "../hooks/useDashboard";
 
 const Dashboard = () => {
-  // Fake data (pour l'instant)
-  const totalStudents = 245;
-  const totalClasses = 12;
-  const paidThisMonth = 190;
-  const unpaidThisMonth = 55;
-
-  const studentsByClass = [
-    { className: "10ème A", count: 30 },
-    { className: "10ème B", count: 28 },
-    { className: "11ème A", count: 32 },
-  ];
+  const {
+    totalStudents,
+    totalClasses,
+    paidThisMonth,
+    unpaidThisMonth,
+    studentsByClass,
+  } = useDashboard();
 
   return (
     <div className="p-6 space-y-8">

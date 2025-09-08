@@ -16,8 +16,8 @@ const Payments = () => {
   );
 
   const columns: ColumnDef<PaymentExtended>[] = [
-    { accessorKey: "id", header: "ID" },
-    { accessorKey: "studentName", header: "Student" },
+    { accessorKey: "paymentId", header: "ID" },
+    { accessorKey: "firstName", header: "Student" },
     { accessorKey: "className", header: "Class" },
     {
       accessorKey: "amount",
@@ -37,7 +37,7 @@ const Payments = () => {
         <div className="flex gap-2">
           <button
             onClick={() => setEditPayment(row.original)}
-            className="p-2 bg-yellow-400 rounded hover:bg-yellow-500 text-white"
+            className="p-2 bg-indigo-500 rounded hover:bg-indigo-600 text-white"
             title="Edit"
           >
             <FaEdit />
