@@ -54,3 +54,5 @@ export class ClassDAO extends BaseDAO<Class> {
     return !!result;
   }
 }
+
+export const classDAO = (db: DBType) => new ClassDAO(db);

@@ -5,6 +5,10 @@ import { getPreloadPath } from "./pathResolver.js";
 import { DatabaseManager } from "./config/database.js";
 import { MigrationManager } from "./db/migrations.js";
 import { IPCController } from "./controllers/ipcController.js";
+import { fileURLToPath } from "url";
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 class Application {
   private mainWindow: BrowserWindow | null = null;
@@ -31,6 +35,7 @@ class Application {
     this.mainWindow = new BrowserWindow({
       width: 1200,
       height: 800,
+      icon: path.join(__dirname, "../../public/logo.png"),
       webPreferences: {
         preload: getPreloadPath(),
         nodeIntegration: false,

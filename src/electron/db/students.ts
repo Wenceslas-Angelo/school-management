@@ -57,3 +57,6 @@ export class StudentDAO extends BaseDAO<Student> {
     `);
   }
 }
+
+export const studentDAO = (db: Database) => new StudentDAO(db);
+

@@ -1,6 +1,9 @@
 import type { Student } from "../../types/student.js";
 import type { StudentDAO } from "../db/students.js";
 import type { ClassDAO } from "../db/classes.js";
+import { studentDAO } from "../db/students.js";
+import { classDAO } from "../db/classes.js";
+import { db } from "../config/database.js";
 
 export class StudentService {
   private studentDAO: StudentDAO;
@@ -58,3 +61,6 @@ export class StudentService {
     return students.find(s => s.id === id) || null;
   }
 }
+
+export const studentService = new StudentService(studentDAO(db), classDAO(db));
+

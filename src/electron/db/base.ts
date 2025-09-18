@@ -1,5 +1,5 @@
 // electron/db/base.ts
-import { Database } from "better-sqlite3";
+import type { Database, RunResult } from "better-sqlite3";
 
 export abstract class BaseDAO<T> {
   protected db: Database;
@@ -18,7 +18,7 @@ export abstract class BaseDAO<T> {
     return this.db.prepare(query).get(...params) as R | undefined;
   }
 
-  protected executeRun(query: string, params: unknown[] = []): Database.RunResult {
+  protected executeRun(query: string, params: unknown[] = []): RunResult {
     return this.db.prepare(query).run(...params);
   }
 
