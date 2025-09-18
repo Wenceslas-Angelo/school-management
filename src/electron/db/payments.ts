@@ -1,86 +1,68 @@
-import { db } from "./database.js";
+import { BaseDAO } from "./base.js";
+import { TABLE_NAMES } from "../config/constants.js";
 import type { Payment } from "../../types/payment.js";
 
-export const PaymentDB = {
-  getAll(): Payment[] {
-    return db.prepare("SELECT * FROM payments").all() as Payment[];
-  },
+export class PaymentDAO extends BaseDAO<Payment> {
+  constructor() {
+    super(TABLE_NAMES.PAYMENTS);
+  }
 
-  getById(id: number): Payment | undefined {
-    return db.prepare("SELECT * FROM payments WHERE id = ?").get(id) as
-      | Payment
-      | undefined;
-  },
-
-  getByStudentId(studentId: number): Payment[] {
-    return db.prepare("SELECT * FROM payments WHERE studentId = ?").all(studentId) as Payment[];
-  },
-
-  add(payment: Payment): number {
-    const stmt = db.prepare(`
-      INSERT INTO payments (studentId, amount, date, months, description)
-      VALUES (?, ?, ?, ?, ?)
-    `);
-    const info = stmt.run(
-      payment.studentId,
-      payment.amount,
-      payment.date,
-      payment.months,         // ex: "2025-09,2025-10"
-      payment.description || ""
+  add(payment: Omit<Payment, 'id'>): number {
+    const result = this.executeRun(
+      `INSERT INTO ${this.tableName} (studentId, amount, date, months, description) 
+       VALUES (?, ?, ?, ?, ?)`,
+      [payment.studentId, payment.amount, payment.date, payment.months, payment.description || ""]
     );
-    return info.lastInsertRowid as number;
-  },
+    return result.lastInsertRowid as number;
+  }
 
   update(payment: Payment): number {
-    const stmt = db.prepare(`
-      UPDATE payments
-      SET studentId = ?, amount = ?, date = ?, months = ?, description = ?
-      WHERE id = ?
-    `);
-    const info = stmt.run(
-      payment.studentId,
-      payment.amount,
-      payment.date,
-      payment.months,
-      payment.description || "",
-      payment.id
+    const result = this.executeRun(
+      `UPDATE ${this.tableName} 
+       SET studentId = ?, amount = ?, date = ?, months = ?, description = ?,
+           updated_at = CURRENT_TIMESTAMP
+       WHERE id = ?`,
+      [payment.studentId, payment.amount, payment.date, payment.months, payment.description || "", payment.id]
     );
-    return info.changes;
-  },
-
-  delete(id: number): number {
-    const stmt = db.prepare("DELETE FROM payments WHERE id = ?");
-    const info = stmt.run(id);
-    return info.changes;
-  },
-
-  // ✅ Fonction utilitaire pour vérifier si un élève a payé un mois donné
-  hasPaidMonth(studentId: number, month: string): boolean {
-    const payment = db.prepare(`
-      SELECT 1 FROM payments
-      WHERE studentId = ?
-      AND ',' || months || ',' LIKE '%,${month},%'
-      LIMIT 1
-    `).get(studentId);
-    return !!payment;
-  },
-
-   getAllWithStudentInfo(): any[] {
-    return db.prepare(`
-      SELECT
-        p.id AS paymentId,
-        p.amount,
-        p.date,
-        p.months,
-        p.description,
-        s.firstName,
-        s.lastName,
-        c.name AS className,
-        c.section AS classSection
-      FROM payments p
-      JOIN students s ON p.studentId = s.id
-      LEFT JOIN class c ON s.classId = c.id
-      ORDER BY p.date DESC
-    `).all();
+    return result.changes;
   }
-};
+
+  getByStudentId(studentId: number): Payment[] {
+    return this.executeQuery(
+      `SELECT * FROM ${this.tableName} WHERE studentId = ? ORDER BY date DESC`,
+      [studentId]
+    );
+  }
+
+  getAllWithStudentInfo(): Array<Payment & { firstName: string; lastName: string; className?: string; classSection?: string }> {
+    return this.executeQuery(`
+      SELECT p.*, s.firstName, s.lastName, c.name as className, c.section as classSection
+      FROM ${this.tableName} p
+      JOIN ${TABLE_NAMES.STUDENTS} s ON p.studentId = s.id
+      LEFT JOIN ${TABLE_NAMES.CLASSES} c ON s.classId = c.id
+      ORDER BY p.date DESC
+    `);
+  }
+
+  hasPaidMonth(studentId: number, month: string): boolean {
+    const result = this.executeGet(
+      `SELECT 1 FROM ${this.tableName}
+       WHERE studentId = ? AND months LIKE ?
+       LIMIT 1`,
+      [studentId, `%${month}%`]
+    );
+    return !!result;
+  }
+
+  getMonthlyStats(month: string): { totalAmount: number; paymentCount: number } {
+    const result = this.executeGet<{ totalAmount: number; paymentCount: number }>(
+      `SELECT COALESCE(SUM(amount), 0) as totalAmount, COUNT(*) as paymentCount
+       FROM ${this.tableName}
+       WHERE months LIKE ?`,
+      [`%${month}%`]
+    );
+    return result || { totalAmount: 0, paymentCount: 0 };
+  }
+}
+
+export const paymentDAO = new PaymentDAO();

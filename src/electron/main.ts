@@ -1,74 +1,70 @@
-import { app, BrowserWindow, ipcMain } from "electron";
+import { app, BrowserWindow } from "electron";
 import path from "path";
-import { isDev } from "./util.js";
+import { isDev } from "./utils/env.js";
 import { getPreloadPath } from "./pathResolver.js";
-import { StudentDB } from "./db/students.js";
-import { PaymentDB } from "./db/payments.js";
-import { ClassDB } from "./db/classes.js";
+import { DatabaseManager } from "./config/database.js";
+import { MigrationManager } from "./db/migrations.js";
+import { IPCController } from "./controllers/ipcController.js";
 
-function createWindow() {
-  const mainWindow = new BrowserWindow({
-    width: 1200,
-    height: 800,
-    webPreferences: {
-      preload: getPreloadPath(),
-    },
-  });
+class Application {
+  private mainWindow: BrowserWindow | null = null;
 
-  if (isDev()) {
-    mainWindow.loadURL("http://localhost:5123");
-  } else {
-    mainWindow.loadFile(path.join(app.getAppPath(), "dist-react/index.html"));
+  async initialize(): Promise<void> {
+    await app.whenReady();
+    await this.initializeDatabase();
+    this.registerEventHandlers();
+    IPCController.registerHandlers();
+    this.createWindow();
+  }
+
+  private async initializeDatabase(): Promise<void> {
+    try {
+      await MigrationManager.initialize();
+      console.log("Database initialized successfully");
+    } catch (error) {
+      console.error("Failed to initialize database:", error);
+      app.quit();
+    }
+  }
+
+  private createWindow(): void {
+    this.mainWindow = new BrowserWindow({
+      width: 1200,
+      height: 800,
+      webPreferences: {
+        preload: getPreloadPath(),
+        nodeIntegration: false,
+        contextIsolation: true,
+      },
+    });
+
+    if (isDev()) {
+      this.mainWindow.loadURL("http://localhost:5123");
+      this.mainWindow.webContents.openDevTools();
+    } else {
+      this.mainWindow.loadFile(path.join(app.getAppPath(), "dist-react/index.html"));
+    }
+  }
+
+  private registerEventHandlers(): void {
+    app.on("window-all-closed", () => {
+      if (process.platform !== "darwin") {
+        DatabaseManager.close();
+        app.quit();
+      }
+    });
+
+    app.on("activate", () => {
+      if (BrowserWindow.getAllWindows().length === 0) {
+        this.createWindow();
+      }
+    });
+
+    app.on("before-quit", () => {
+      DatabaseManager.close();
+    });
   }
 }
 
-// --- Students IPC ---
-ipcMain.handle("students:getAll", () => StudentDB.getAll());
-ipcMain.handle("students:getById", (_event, id: number) =>
-  StudentDB.getById(id)
-);
-ipcMain.handle("students:getByClassId", (_event, classId: number) =>
-  StudentDB.getByClassId(classId)
-);
-ipcMain.handle("students:add", (_event, student) => StudentDB.add(student));
-ipcMain.handle("students:update", (_event, student) =>
-  StudentDB.update(student)
-);
-ipcMain.handle("students:delete", (_event, id: number) => StudentDB.delete(id));
-ipcMain.handle("students:search", (_event, query: string) => {
-  return StudentDB.search(query);
-});
-
-// --- Payments IPC ---
-ipcMain.handle("payments:getAll", () => PaymentDB.getAll());
-ipcMain.handle("payments:getAllWithStudentInfo", () =>
-  PaymentDB.getAllWithStudentInfo()
-);
-ipcMain.handle("payments:getById", (_event, id: number) =>
-  PaymentDB.getById(id)
-);
-ipcMain.handle("payments:getByStudentId", (_event, studentId: number) =>
-  PaymentDB.getByStudentId(studentId)
-);
-ipcMain.handle("payments:add", (_event, payment) => PaymentDB.add(payment));
-ipcMain.handle("payments:update", (_event, payment) =>
-  PaymentDB.update(payment)
-);
-ipcMain.handle("payments:delete", (_event, id: number) => PaymentDB.delete(id));
-ipcMain.handle(
-  "payments:hasPaidMonth",
-  (_event, studentId: number, month: string) =>
-    PaymentDB.hasPaidMonth(studentId, month)
-);
-
-// --- Classes IPC ---
-ipcMain.handle("classes:getAll", () => ClassDB.getAll());
-ipcMain.handle("classes:getById", (_event, id: number) => ClassDB.getById(id));
-ipcMain.handle("classes:add", (_event, cls) => ClassDB.add(cls));
-ipcMain.handle("classes:update", (_event, cls) => ClassDB.update(cls));
-ipcMain.handle("classes:delete", (_event, id: number) => ClassDB.delete(id));
-ipcMain.handle("classes:getWithStudents", (_event, id: number) =>
-  ClassDB.getWithStudents(id)
-);
-
-app.whenReady().then(createWindow);
+const application = new Application();
+application.initialize().catch(console.error);
