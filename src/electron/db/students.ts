@@ -1,19 +1,20 @@
 import { BaseDAO } from "./base.js";
 import { TABLE_NAMES } from "../config/constants.js";
 import type { Student } from "../../types/student.js";
+import type { Database } from "better-sqlite3";
 
 export class StudentDAO extends BaseDAO<Student> {
-  constructor() {
-    super(TABLE_NAMES.STUDENTS);
+
+  constructor(db: Database) {
+    super(TABLE_NAMES.STUDENTS, db);
   }
 
   add(student: Omit<Student, 'id' | 'createdAt'>): number {
-    const result = this.executeRun(
+    return this.executeRun(
       `INSERT INTO ${this.tableName} (firstName, lastName, birthDate, sex, classId) 
        VALUES (?, ?, ?, ?, ?)`,
       [student.firstName, student.lastName, student.birthDate, student.sex, student.classId]
-    );
-    return result.lastInsertRowid as number;
+    ).lastInsertRowid as number;
   }
 
   update(student: Student): number {
@@ -56,5 +57,3 @@ export class StudentDAO extends BaseDAO<Student> {
     `);
   }
 }
-
-export const studentDAO = new StudentDAO();

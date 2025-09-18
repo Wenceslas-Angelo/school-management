@@ -1,10 +1,11 @@
 import { BaseDAO } from "./base.js";
 import { TABLE_NAMES } from "../config/constants.js";
 import type { Class } from "../../types/class.js";
+import type { Database as DBType } from "better-sqlite3";
 
 export class ClassDAO extends BaseDAO<Class> {
-  constructor() {
-    super(TABLE_NAMES.CLASSES);
+  constructor(db: DBType) {
+    super(TABLE_NAMES.CLASSES, db);
   }
 
   getAll(): Class[] {
@@ -12,12 +13,18 @@ export class ClassDAO extends BaseDAO<Class> {
   }
 
   add(cls: Omit<Class, 'id'>): number {
+    if (this.exists(cls.name, cls.section? cls.section : null)) {
+      throw new Error('Class with this name and section already exists');
+    }
+
     const result = this.executeRun(
       `INSERT INTO ${this.tableName} (name, section) VALUES (?, ?)`,
       [cls.name, cls.section]
     );
     return result.lastInsertRowid as number;
   }
+
+
 
   update(cls: Class): number {
     const result = this.executeRun(
@@ -47,5 +54,3 @@ export class ClassDAO extends BaseDAO<Class> {
     return !!result;
   }
 }
-
-export const classDAO = new ClassDAO();

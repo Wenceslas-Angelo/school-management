@@ -1,21 +1,24 @@
+// test/payments.test.ts
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { PaymentDAO } from '../payments.js';
 import { StudentDAO } from '../students.js';
 import { ClassDAO } from '../classes.js';
-import { DatabaseManager } from '../../config/database.js';
-import { MigrationManager } from '../migrations.js';
+import { TestDB } from './../../test/testDB.js';
 
 describe('PaymentDAO', () => {
+  let db: TestDB;
   let paymentDAO: PaymentDAO;
   let studentDAO: StudentDAO;
   let classDAO: ClassDAO;
   let studentId: number;
 
   beforeEach(async () => {
-    await MigrationManager.initialize();
-    paymentDAO = new PaymentDAO();
-    studentDAO = new StudentDAO();
-    classDAO = new ClassDAO();
+    db = new TestDB();
+    await db.init();
+
+    classDAO = new ClassDAO(db.db);
+    studentDAO = new StudentDAO(db.db);
+    paymentDAO = new PaymentDAO(db.db);
 
     const classId = classDAO.add({ name: 'CM2', section: 'A' });
     studentId = studentDAO.add({
@@ -27,7 +30,7 @@ describe('PaymentDAO', () => {
   });
 
   afterEach(() => {
-    DatabaseManager.close();
+    db.close();
   });
 
   describe('add', () => {

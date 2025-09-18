@@ -1,13 +1,16 @@
-import { db } from "../config/database.js";
+import type { Database } from "better-sqlite3";
 import { SQL_QUERIES } from "../config/constants.js";
 
 export class MigrationManager {
-  private static readonly MIGRATION_TABLE = 'schema_migrations';
+  private db: Database;
 
-  static async initialize(): Promise<void> {
-    // Table des migrations
-    db.exec(`
-      CREATE TABLE IF NOT EXISTS ${this.MIGRATION_TABLE} (
+  constructor(db: Database) {
+    this.db = db;
+  }
+
+  async initialize(): Promise<void> {
+    this.db.exec(`
+      CREATE TABLE IF NOT EXISTS schema_migrations (
         version INTEGER PRIMARY KEY,
         applied_at TEXT DEFAULT CURRENT_TIMESTAMP
       )
@@ -16,7 +19,7 @@ export class MigrationManager {
     await this.runMigrations();
   }
 
-  private static async runMigrations(): Promise<void> {
+  private async runMigrations() {
     const migrations = [
       { version: 1, sql: SQL_QUERIES.CREATE_CLASS_TABLE },
       { version: 2, sql: SQL_QUERIES.CREATE_STUDENT_TABLE },
@@ -25,22 +28,15 @@ export class MigrationManager {
     ];
 
     const appliedMigrations = new Set(
-      db.prepare(`SELECT version FROM ${this.MIGRATION_TABLE}`)
-        .all()
-        .map(row => (row as any).version)
+      this.db.prepare(`SELECT version FROM schema_migrations`).all().map(r => (r as any).version)
     );
 
-    for (const migration of migrations) {
-      if (!appliedMigrations.has(migration.version)) {
-        console.log(`Running migration ${migration.version}...`);
-        
-        db.exec(migration.sql);
-        
-        db.prepare(`INSERT INTO ${this.MIGRATION_TABLE} (version) VALUES (?)`)
-          .run(migration.version);
-        
-        console.log(`Migration ${migration.version} completed`);
+    for (const m of migrations) {
+      if (!appliedMigrations.has(m.version)) {
+        this.db.exec(m.sql);
+        this.db.prepare(`INSERT INTO schema_migrations (version) VALUES (?)`).run(m.version);
       }
     }
   }
 }
+

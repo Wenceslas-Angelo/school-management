@@ -1,23 +1,29 @@
+// electron/db/__tests__/studentDAO.test.ts
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { StudentDAO } from '../students.js';
 import { ClassDAO } from '../classes.js';
-import { DatabaseManager } from '../../config/database.js';
-import { MigrationManager } from '../migrations.js';
+import { TestDB } from '../../test/testDB.js';
 
 describe('StudentDAO', () => {
   let studentDAO: StudentDAO;
   let classDAO: ClassDAO;
+  let db: TestDB;
   let classId: number;
 
   beforeEach(async () => {
-    await MigrationManager.initialize();
-    studentDAO = new StudentDAO();
-    classDAO = new ClassDAO();
+    // Crée une DB in-memory isolée
+    db = new TestDB();
+    await db.init();
+
+    studentDAO = new StudentDAO(db.db);
+    classDAO = new ClassDAO(db.db);
+
+    // Création d'une classe pour les tests
     classId = classDAO.add({ name: 'CM2', section: 'A' });
   });
 
   afterEach(() => {
-    DatabaseManager.close();
+    db.close();
   });
 
   describe('add', () => {
@@ -46,7 +52,7 @@ describe('StudentDAO', () => {
       const student = studentDAO.getById(id);
 
       expect(student?.firstName).toBe('Jane');
-      expect(student?.classId).toBeUndefined();
+      expect(student?.classId).toBeNull();
     });
   });
 
