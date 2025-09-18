@@ -1,5 +1,6 @@
 import type { Database } from "better-sqlite3";
 import { SQL_QUERIES } from "../config/constants.js";
+import { db } from "../config/database.js"; // importer l'instance DB
 
 export class MigrationManager {
   private db: Database;
@@ -8,7 +9,18 @@ export class MigrationManager {
     this.db = db;
   }
 
+  // Méthode statique qui utilise l'instance DB du singleton
+  static async initialize(): Promise<void> {
+    const migrationManager = new MigrationManager(db);
+    await migrationManager.runInitialization();
+  }
+
+  // Méthode d'instance pour les tests avec DB custom
   async initialize(): Promise<void> {
+    await this.runInitialization();
+  }
+
+  private async runInitialization(): Promise<void> {
     this.db.exec(`
       CREATE TABLE IF NOT EXISTS schema_migrations (
         version INTEGER PRIMARY KEY,
@@ -39,4 +51,3 @@ export class MigrationManager {
     }
   }
 }
-
