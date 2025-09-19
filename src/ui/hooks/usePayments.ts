@@ -1,34 +1,25 @@
-import { useEffect, useCallback } from "react";
-import { usePaymentStore } from "../store/paymentStore";
+import { useEffect } from "react";
+import { useCrud } from "./useCrud";
 import type { PaymentExtended } from "../../types/payment";
 
 export function usePayments() {
-  const { payments, setPayments, addPayment, updatePayment, deletePayment } =
-    usePaymentStore();
+  const operations = {
+    getAll: () => window.api.payments.getAllWithStudentInfo(),
+    add: (payment: Omit<PaymentExtended, 'id'>) => 
+      window.api.payments.add(payment as any),
+    update: (payment: PaymentExtended) => 
+      window.api.payments.update(payment as any),
+    delete: (id: number) => window.api.payments.delete(id),
+  };
 
-  const reload = useCallback(async () => {
-    const data = await window.api.payments.getAllWithStudentInfo();
-    setPayments(data);
-  }, [setPayments]);
+  const crud = useCrud<PaymentExtended>(operations);
 
   useEffect(() => {
-    reload();
-  }, [reload]);
+    crud.load();
+  }, [crud.load]);
 
   return {
-    payments,
-    reload,
-    add: async (payment: PaymentExtended) => {
-      const id = await window.api.payments.add(payment);
-      addPayment({ ...payment, id });
-    },
-    update: async (payment: PaymentExtended) => {
-      await window.api.payments.update(payment);
-      updatePayment(payment);
-    },
-    remove: async (id: number) => {
-      await window.api.payments.delete(id);
-      deletePayment(id);
-    },
+    ...crud,
+    payments: crud.data, // alias pour compatibilité
   };
 }

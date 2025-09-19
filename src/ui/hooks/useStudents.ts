@@ -1,34 +1,20 @@
-import { useEffect, useCallback } from "react";
-import { useStudentStore } from "../store/studentStore";
+import { useEffect } from "react";
+import { useCrud } from "./useCrud";
 import type { Student } from "../../types/student";
 
 export function useStudents() {
-  const { students, setStudents, addStudent, updateStudent, deleteStudent } =
-    useStudentStore();
+  const operations = {
+    getAll: () => window.api.students.getAll(),
+    add: (student: Omit<Student, 'id'>) => window.api.students.add(student as Student),
+    update: (student: Student) => window.api.students.update(student),
+    delete: (id: number) => window.api.students.delete(id),
+  };
 
-  const reload = useCallback(async () => {
-    const data = await window.api.students.getAll();
-    setStudents(data);
-  }, [setStudents]);
+  const crud = useCrud<Student>(operations);
 
   useEffect(() => {
-    reload();
-  }, [reload]);
+    crud.load();
+  }, [crud.load]);
 
-  return {
-    students,
-    reload,
-    add: async (student: Student) => {
-      const id = await window.api.students.add(student);
-      addStudent({ ...student, id });
-    },
-    update: async (student: Student) => {
-      await window.api.students.update(student);
-      updateStudent(student);
-    },
-    remove: async (id: number) => {
-      await window.api.students.delete(id);
-      deleteStudent(id);
-    },
-  };
+  return crud;
 }

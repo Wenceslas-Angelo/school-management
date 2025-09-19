@@ -1,34 +1,20 @@
-import { useEffect, useCallback } from "react";
-import { useClassStore } from "../store/classStore";
+import { useEffect } from "react";
+import { useCrud } from "./useCrud";
 import type { Class } from "../../types/class";
 
 export function useClasses() {
-  const { classes, setClasses, addClass, updateClass, deleteClass } =
-    useClassStore();
+  const operations = {
+    getAll: () => window.api.classes.getAll(),
+    add: (cls: Omit<Class, 'id'>) => window.api.classes.add(cls as Class),
+    update: (cls: Class) => window.api.classes.update(cls),
+    delete: (id: number) => window.api.classes.delete(id),
+  };
 
-  const reload = useCallback(async () => {
-    const data = await window.api.classes.getAll(); // backend IPC
-    setClasses(data);
-  }, [setClasses]);
+  const crud = useCrud<Class>(operations);
 
   useEffect(() => {
-    reload();
-  }, [reload]);
+    crud.load();
+  }, [crud.load]);
 
-  return {
-    classes,
-    reload,
-    add: async (classItem: Class) => {
-      const id = await window.api.classes.add(classItem);
-      addClass({ ...classItem, id });
-    },
-    update: async (classItem: Class) => {
-      await window.api.classes.update(classItem);
-      updateClass(classItem);
-    },
-    remove: async (id: number) => {
-      await window.api.classes.delete(id);
-      deleteClass(id);
-    },
-  };
+  return crud;
 }
