@@ -4,94 +4,102 @@ import {
   FaSchool,
   FaMoneyBillWave,
   FaExclamationTriangle,
+  FaChartLine,
+  FaPercentage,
 } from "react-icons/fa";
-import { useDashboard } from "../hooks/useDashboard";
+import { DashboardCard } from "../components/DashboardCard";
+import { LoadingSpinner } from "../components/LoadingSpinner";
+import { ErrorMessage } from "../components/ErrorMessage";
+import { useStudents } from "../hooks/useStudents";
+import { usePayments } from "../hooks/usePayments";
+import { useClasses } from "../hooks/useClasses";
+import { useDashboardStats } from "../hooks/useDashboardStats";
 
-const Dashboard = () => {
-  const {
-    totalStudents,
-    totalClasses,
-    paidThisMonth,
-    unpaidThisMonth,
-    studentsByClass,
-  } = useDashboard();
+const Dashboard = React.memo(() => {
+  const { data: students, loading: studentsLoading, error: studentsError } = useStudents();
+  const { data: payments, loading: paymentsLoading, error: paymentsError } = usePayments();
+  const { data: classes, loading: classesLoading, error: classesError } = useClasses();
+
+  const loading = studentsLoading || paymentsLoading || classesLoading;
+  const error = studentsError || paymentsError || classesError;
+
+  const stats = useDashboardStats(students, payments, classes);
+
+  if (loading) return <LoadingSpinner size="lg" />;
+  if (error) return <ErrorMessage error={error} />;
 
   return (
     <div className="p-6 space-y-8">
       <h1 className="text-2xl font-bold text-gray-800">Dashboard 📊</h1>
 
-      {/* Section globale */}
-      <div>
-        <h2 className="text-lg font-semibold mb-4">Vue d’ensemble</h2>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-          {/* Total Students */}
-          <div className="bg-white rounded-2xl shadow p-4 flex items-center gap-4">
-            <div className="p-3 rounded-full bg-blue-100 text-blue-600 text-xl">
-              <FaUserGraduate />
-            </div>
-            <div>
-              <p className="text-gray-500 text-sm">Total Students</p>
-              <p className="text-lg font-bold">{totalStudents}</p>
-            </div>
-          </div>
-
-          {/* Total Classes */}
-          <div className="bg-white rounded-2xl shadow p-4 flex items-center gap-4">
-            <div className="p-3 rounded-full bg-purple-100 text-purple-600 text-xl">
-              <FaSchool />
-            </div>
-            <div>
-              <p className="text-gray-500 text-sm">Total Classes</p>
-              <p className="text-lg font-bold">{totalClasses}</p>
-            </div>
-          </div>
-
-          {/* Paid */}
-          <div className="bg-white rounded-2xl shadow p-4 flex items-center gap-4">
-            <div className="p-3 rounded-full bg-green-100 text-green-600 text-xl">
-              <FaMoneyBillWave />
-            </div>
-            <div>
-              <p className="text-gray-500 text-sm">Paid (This Month)</p>
-              <p className="text-lg font-bold">{paidThisMonth}</p>
-            </div>
-          </div>
-
-          {/* Unpaid */}
-          <div className="bg-white rounded-2xl shadow p-4 flex items-center gap-4">
-            <div className="p-3 rounded-full bg-red-100 text-red-600 text-xl">
-              <FaExclamationTriangle />
-            </div>
-            <div>
-              <p className="text-gray-500 text-sm">Unpaid (This Month)</p>
-              <p className="text-lg font-bold">{unpaidThisMonth}</p>
-            </div>
-          </div>
+      {/* Stats principales */}
+      <section>
+        <h2 className="text-lg font-semibold mb-4">Vue d'ensemble</h2>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
+          <DashboardCard
+            title="Total Students"
+            value={stats.totalStudents}
+            icon={<FaUserGraduate />}
+            color="blue"
+          />
+          
+          <DashboardCard
+            title="Total Classes"
+            value={stats.totalClasses}
+            icon={<FaSchool />}
+            color="purple"
+          />
+          
+          <DashboardCard
+            title="Paid (This Month)"
+            value={stats.paidThisMonth}
+            icon={<FaMoneyBillWave />}
+            color="green"
+            subtitle={`${stats.paymentRate}% rate`}
+          />
+          
+          <DashboardCard
+            title="Unpaid (This Month)"
+            value={stats.unpaidThisMonth}
+            icon={<FaExclamationTriangle />}
+            color="red"
+          />
+          
+          <DashboardCard
+            title="Monthly Revenue"
+            value={`${(stats.monthlyRevenue / 1000).toFixed(0)}K Ar`}
+            icon={<FaChartLine />}
+            color="indigo"
+          />
+          
+          <DashboardCard
+            title="Payment Rate"
+            value={`${stats.paymentRate}%`}
+            icon={<FaPercentage />}
+            color="orange"
+          />
         </div>
-      </div>
+      </section>
 
-      {/* Section par classe */}
-      <div>
-        <h2 className="text-lg font-semibold mb-4">Par Classe</h2>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-          {studentsByClass.map((c, i) => (
-            <div
-              key={i}
-              className="bg-white rounded-2xl shadow p-4 flex items-center gap-4"
-            >
-              <div className="p-3 rounded-full bg-indigo-100 text-indigo-600 text-xl">
-                <FaSchool />
-              </div>
-              <div>
-                <p className="text-gray-500 text-sm">{c.className}</p>
-                <p className="text-lg font-bold">{c.count}</p>
-              </div>
-            </div>
+      {/* Répartition par classe */}
+      <section>
+        <h2 className="text-lg font-semibold mb-4">Répartition par classe</h2>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          {stats.studentsByClass.map((item, i) => (
+            <DashboardCard
+              key={item.className}
+              title={item.className}
+              value={item.count}
+              icon={<FaSchool />}
+              color="indigo"
+            />
           ))}
         </div>
-      </div>
+      </section>
     </div>
   );
-};
+});
+
+Dashboard.displayName = 'Dashboard';
 
 export default Dashboard;
