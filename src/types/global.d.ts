@@ -14,7 +14,7 @@ declare global {
         add: (student: Student) => Promise<number>;
         update: (student: Student) => Promise<number>;
         delete: (id: number) => Promise<number>;
-        search: (query: string) => PromisePromise<Student | undefined>;
+        search: (query: string) => Promise<{ value: number; label: string }[]>; // FIX
       };
       payments: {
         getAll: () => Promise<Payment[]>;

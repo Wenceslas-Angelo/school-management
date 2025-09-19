@@ -1,16 +1,20 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import Table from "../components/Table";
 import type { ColumnDef } from "@tanstack/react-table";
 import type { Student } from "../../types/student";
 import type { Class } from "../../types/class";
 import StudentForm from "../components/StudentForm";
 import Modal from "../components/Modal";
+import { CrudActions } from "../components/CrudActions";
+import { ConfirmDialog } from "../components/ConfirmDialog";
+import { LoadingSpinner } from "../components/LoadingSpinner";
+import { ErrorMessage } from "../components/ErrorMessage";
 import { useStudents } from "../hooks/useStudents";
-import { FaPlus, FaEdit, FaTrash } from "react-icons/fa";
+import { FaPlus } from "react-icons/fa";
 
 const Students = () => {
-  const { students, reload, add, update, remove } = useStudents();
-
+  const { data: students, loading, error, create, update, remove, load } = useStudents();
+  
   const [classes, setClasses] = useState<Class[]>([]);
   const [isAddModalOpen, setAddModalOpen] = useState(false);
   const [editStudent, setEditStudent] = useState<Student | null>(null);
@@ -20,40 +24,77 @@ const Students = () => {
     window.api.classes.getAll().then(setClasses);
   }, []);
 
-  const getClassName = (classId?: number) => {
-    const cls = classes.find((c) => c.id === classId);
-    return cls ? (cls.section ? `${cls.name} ${cls.section}` : cls.name) : "-";
-  };
+  // Optimisation: Map des classes pour éviter le find() dans le render
+  const classMap = useMemo(() => {
+    const map = new Map<number, string>();
+    classes.forEach(cls => {
+      const label = cls.section ? `${cls.name} ${cls.section}` : cls.name;
+      map.set(cls.id!, label);
+    });
+    return map;
+  }, [classes]);
 
-  const columns: ColumnDef<Student>[] = [
+  const columns: ColumnDef<Student>[] = useMemo(() => [
     { accessorKey: "id", header: "ID" },
-    { accessorFn: (row) => `${row.firstName} ${row.lastName}`, header: "Name" },
-    { accessorFn: (row) => getClassName(row.classId), header: "Class" },
+    { 
+      accessorFn: (row) => `${row.firstName} ${row.lastName}`, 
+      header: "Name" 
+    },
+    { 
+      accessorFn: (row) => classMap.get(row.classId!) || "-", 
+      header: "Class" 
+    },
     { accessorKey: "birthDate", header: "Birth Date" },
     { accessorKey: "sex", header: "Sex" },
     {
       id: "actions",
       header: "Actions",
       cell: ({ row }) => (
-        <div className="flex gap-2">
-          <button
-            onClick={() => setEditStudent(row.original)}
-            className="p-2 bg-yellow-400 rounded hover:bg-yellow-500 text-white"
-            title="Edit"
-          >
-            <FaEdit />
-          </button>
-          <button
-            onClick={() => setDeleteStudent(row.original)}
-            className="p-2 bg-red-500 rounded hover:bg-red-600 text-white"
-            title="Delete"
-          >
-            <FaTrash />
-          </button>
-        </div>
+        <CrudActions 
+          item={row.original}
+          onEdit={setEditStudent}
+          onDelete={setDeleteStudent}
+        />
       ),
     },
-  ];
+  ], [classMap]);
+
+  const handleAdd = async (student: Student) => {
+    try {
+      await create(student);
+      setAddModalOpen(false);
+    } catch (error) {
+      console.error('Failed to add student:', error);
+    }
+  };
+
+  const handleUpdate = async (student: Student) => {
+    try {
+      await update(student);
+      setEditStudent(null);
+    } catch (error) {
+      console.error('Failed to update student:', error);
+    }
+  };
+
+  const handleDelete = async () => {
+    if (deleteStudent?.id) {
+      try {
+        await remove(deleteStudent.id);
+        setDeleteStudent(null);
+      } catch (error) {
+        console.error('Failed to delete student:', error);
+      }
+    }
+  };
+
+  if (loading && students.length === 0) {
+    return <LoadingSpinner size="lg" />;
+  }
+
+  if (error) {
+    return <ErrorMessage error={error} onRetry={load} />;
+  }
 
   return (
     <div>
@@ -61,7 +102,7 @@ const Students = () => {
         Students
         <button
           onClick={() => setAddModalOpen(true)}
-          className="flex items-center gap-2 px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
+          className="flex items-center gap-2 px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors"
         >
           <FaPlus /> Add Student
         </button>
@@ -76,11 +117,7 @@ const Students = () => {
         title="Add Student"
       >
         <StudentForm
-          onSubmit={async (student) => {
-            await add(student);
-            setAddModalOpen(false);
-            reload();
-          }}
+          onSubmit={handleAdd}
           onCancel={() => setAddModalOpen(false)}
         />
       </Modal>
@@ -94,47 +131,21 @@ const Students = () => {
         {editStudent && (
           <StudentForm
             student={editStudent}
-            onSubmit={async (student) => {
-              await update(student);
-              setEditStudent(null);
-              reload();
-            }}
+            onSubmit={handleUpdate}
             onCancel={() => setEditStudent(null)}
           />
         )}
       </Modal>
 
-      {/* MODAL SUPPRESSION */}
-      <Modal
+      {/* CONFIRM DELETE */}
+      <ConfirmDialog
         isOpen={!!deleteStudent}
-        onClose={() => setDeleteStudent(null)}
         title="Confirm Delete"
-      >
-        <p>
-          Are you sure you want to delete {deleteStudent?.firstName}{" "}
-          {deleteStudent?.lastName}?
-        </p>
-        <div className="flex justify-end gap-2 mt-4">
-          <button
-            onClick={() => setDeleteStudent(null)}
-            className="px-4 py-2 bg-gray-200 rounded hover:bg-gray-300"
-          >
-            Cancel
-          </button>
-          <button
-            onClick={async () => {
-              if (deleteStudent?.id) {
-                await remove(deleteStudent.id);
-                setDeleteStudent(null);
-                reload();
-              }
-            }}
-            className="px-4 py-2 bg-red-500 rounded text-white hover:bg-red-600"
-          >
-            Delete
-          </button>
-        </div>
-      </Modal>
+        message={`Are you sure you want to delete ${deleteStudent?.firstName} ${deleteStudent?.lastName}?`}
+        onConfirm={handleDelete}
+        onCancel={() => setDeleteStudent(null)}
+        variant="danger"
+      />
     </div>
   );
 };
